@@ -34,19 +34,35 @@ func NewQrSVG(qr barcode.Barcode, blockSize int) QrSVG {
 
 // WriteQrSVG writes the QR Code to SVG.
 func (qs *QrSVG) WriteQrSVG(s *svg.SVG) error {
+	var needDraw bool
+	var w int
 	if qs.qr.Metadata().CodeKind == "QR Code" {
-		currY := qs.startingY
 
+		currY := qs.startingY
 		for x := 0; x < qs.qrWidth; x++ {
+			needDraw = false
 			currX := qs.startingX
 			for y := 0; y < qs.qrWidth; y++ {
 				if qs.qr.At(x, y) == color.Black {
-					s.Rect(currX, currY, qs.blockSize, qs.blockSize, "fill:black;stroke:none")
-				} else if qs.qr.At(x, y) == color.White {
-					s.Rect(currX, currY, qs.blockSize, qs.blockSize, "fill:white;stroke:none")
+
+					w += qs.blockSize
+					if y == qs.qrWidth-1 {
+						s.Rect(currX, currY, w, qs.blockSize, "fill:black")
+						w = 0
+					}
+					needDraw = true
+				} else {
+					if needDraw {
+						s.Rect(currX, currY, w, qs.blockSize, "fill:black")
+						currX += w + qs.blockSize
+					} else {
+						currX += qs.blockSize
+					}
+					w = 0
+					needDraw = false
 				}
-				currX += qs.blockSize
 			}
+			w = 0
 			currY += qs.blockSize
 		}
 		return nil
